@@ -342,7 +342,7 @@ void sendLoRaFrame(void)
 
 	sprintf(dbgBuffer, "UP Lat %.4f Lon %.4f Alt %d Pr %d B %u%%\n",
 			(trackerData.lat_1 | trackerData.lat_2 << 8 | trackerData.lat_3 << 16 | trackerData.lat_4 << 24 | (trackerData.lat_4 & 0x80 ? 0xFF << 24 : 0)) / 100000.0,
-			(trackerData.lng_1 | trackerData.lng_2 << 8 | trackerData.lng_3 << 16 | trackerData.lng_3 << 24 | (trackerData.lng_4 & 0x80 ? 0xFF << 24 : 0)) / 100000.0,
+			(trackerData.lng_1 | trackerData.lng_2 << 8 | trackerData.lng_3 << 16 | trackerData.lng_4 << 24 | (trackerData.lng_4 & 0x80 ? 0xFF << 24 : 0)) / 100000.0,
 			(trackerData.alt_1 | trackerData.alt_2 << 8 | (trackerData.alt_2 & 0x80 ? 0xFF << 16 : 0)),
 			trackerData.hdop,
 			trackerData.batt);
@@ -357,7 +357,7 @@ void sendLoRaFrame(void)
 			bleuart.printf(dbgBuffer);
 		}
 		sprintf(dbgBuffer, "UP Lon %.6f\n",
-				(trackerData.lng_1 | trackerData.lng_2 << 8 | trackerData.lng_3 << 16 | trackerData.lng_3 << 24 | (trackerData.lng_4 & 0x80 ? 0xFF << 24 : 0)) / 100000.0);
+				(trackerData.lng_1 | trackerData.lng_2 << 8 | trackerData.lng_3 << 16 | trackerData.lng_4 << 24 | (trackerData.lng_4 & 0x80 ? 0xFF << 24 : 0)) / 100000.0);
 		dispAddLine(dbgBuffer);
 		if (bleUARTisConnected)
 		{
