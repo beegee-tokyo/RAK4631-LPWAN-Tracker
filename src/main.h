@@ -63,7 +63,6 @@ void initReadVBAT(void);
 uint8_t readBatt(void);
 uint8_t lorawanBattLevel(void);
 extern uint8_t battLevel;
-extern SemaphoreHandle_t loraEnable;
 
 // BLE
 #include <bluefruit.h>

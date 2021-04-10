@@ -49,22 +49,46 @@ In order to get this code working you need access to a LoRaWan® gateway. This c
 
 In addition you need an account at TheThingsNetwork. You need to create an application there and register your device before the data you send over LoRa can be forwarded by the gateway. It is quite simple and there is a good tutorial at [RAKwireless RAK4270 Quick Start Guide](https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/Quickstart/#connecting-to-the-things-network-ttn). It is for another product of RAK, but the steps how to setup an application and how to register your device are the same. 
 
-The region you live in defines the frequency your LoRaWan® gateways will use. So you need to setup your device to work on the correct frequency. The region is setup by adding a build flag into your projects platformio.ini file.
+The region you live in defines the frequency your LoRaWan® gateways will use. So you need to setup your device to work on the correct frequency.    
+##### With the new LoRaWAN® library SX126x-Arduino **V2.0.0** the region is set as a parameter in **`lmh_init()`**.
+
+In the call **`lmh_init()`** the last parameter defines the LoRaWAN® region.    
+~~The region is setup by adding a build flag into your projects platformio.ini file.~~    
+
+Short explanation about the new **`lmh_init()`** call:    
+```cpp
+/**@brief Lora Initialisation
+ *
+ * @param callbacks   Pointer to structure containing the callback functions
+ * @param lora_param  Pointer to structure containing the parameters
+ * @param otaa        Choose OTAA (true) or ABP (false) activation
+ * @param nodeClass   Choose node class CLASS_A, CLASS_B or CLASS_C, default to CLASS_A
+ * @param region      Choose LoRaWAN region to set correct region parameters, defaults to EU868
+ *
+ * @retval error status
+ */
+	lmh_error_status lmh_init(lmh_callback_t *callbacks, lmh_param_t lora_param, bool otaa, 
+	                          eDeviceClass nodeClass = CLASS_A, 
+	                          LoRaMacRegion_t region = LORAMAC_REGION_EU868);
 ```
-build_flags = -DREGION_US915
-```
-Valid regions are
-```
-REGION_AS923 -> Asia 923 MHz
-REGION_AU915 -> Australia 915 MHz
-REGION_CN470 -> China 470 MHz
-REGION_CN779 -> China 779 MHz
-REGION_EU433 -> Europe 433 MHz
-REGION_EU868 -> Europe 868 MHz
-REGION_IN865 -> India 865 MHz
-REGION_KR920 -> Korea 920 MHz
-REGION_US915 -> US 915 MHz
-```
+The first three parameters are the same as before. Two new parameters have been added.
+
+### eDeviceClass nodeClass
+Even this parameter was defined in V1.x, the **`lmh_init()`** ignored it and initialized the node **ALWAYS** as a node Class A.    
+Now you can explicit set your node to **CLASS_A** or **CLASS_C**. Please take note that **CLASS_B** is still not supported by the library.
+
+### LoRaMacRegion_t region
+This parameter selects the LoRaWAN region for your application. Allowed values for the region are:    
+- _**LORAMAC_REGION_AS923**_    
+- _**LORAMAC_REGION_AU915**_    
+- _**LORAMAC_REGION_CN470**_    
+- _**LORAMAC_REGION_CN779**_    
+- _**LORAMAC_REGION_EU433**_    
+- _**LORAMAC_REGION_EU868**_    
+- _**LORAMAC_REGION_IN865**_    
+- _**LORAMAC_REGION_KR920**_    
+- _**LORAMAC_REGION_US915**_    
+- _**LORAMAC_REGION_US915_HYBRID**_
 
 Some explanation for the code
 ---
@@ -97,20 +121,15 @@ Within the nRF52 Arduino framework is no specific function to send the MCU into 
 
 In this example you use the semaphore method.    
 
-Two tasks are running independently, the loop() task and the loraTask() task.
-Two semaphores are used to control the activity of these two tasks.    
+Two tasks are running independently, the loop() task and the loraTask() task which is started by the SX126x-Arduino library and runs in the background.
+A semaphores are used to control the activity of the loop() tasks.    
 ```cpp
 /** Semaphore to wake up the main loop */
 SemaphoreHandle_t loopEnable;
 ```
-and
-```cpp
-/** Semaphore to wake up the main loop */
-SemaphoreHandle_t loraEnable;
-```
 
-After setup and starting the LoRaWan join process, the semaphore _**loraEnable**_ stays available. The semaphore _**loopEnable**_ is taken.  
-This means the loop task will go into waiting mode while the loraTask is enabled to handle LoRaWan events until the join process was successful. Once the join process is done, the _**loraEnable**_ semaphore is taken as well, forcing the loraTask to go into waiting mode as well.    
+After setup and starting the LoRaWan join process, the semaphore _**loopEnable**_ is taken.  
+This means the loop task will go into waiting mode while the loraTask is handling LoRaWan events in the background. The LoRaWan task is in sleep mode until a LoRa event occurs.    
 At this point no more task is active and the device will go into sleep mode.  
   
 **Events to wake up the MCU**

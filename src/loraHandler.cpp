@@ -11,11 +11,6 @@
 #include "main.h"
 #include <LoRaWan-RAK4630.h>
 
-/** LoRa task handle */
-TaskHandle_t loraTaskHandle;
-/** GPS reading task */
-void loraTask(void *pvParameters);
-
 /** Software timer to switch off the LED after sending a LoRaWan package */
 SoftwareTimer ledTicker;
 
@@ -41,9 +36,6 @@ static void lorawan_rx_handler(lmh_app_data_t *app_data);
 static void lorawan_confirm_class_handler(DeviceClass_t Class);
 /** LoRaWan Function to send a package */
 void sendLoRaFrame(void);
-
-/** Semaphore to wake up the main loop */
-SemaphoreHandle_t loraEnable;
 
 /**@brief Structure containing LoRaWan parameters, needed for lmh_init()
  * 
@@ -101,10 +93,6 @@ void ledOff(TimerHandle_t xTimerID)
  */
 uint8_t initLoRaHandler(void)
 {
-	// Create the semaphore
-	loraEnable = xSemaphoreCreateBinary();
-	xSemaphoreGive(loraEnable);
-
 	Serial.println("=====================================");
 	Serial.println("SX126x initialization");
 	Serial.println("=====================================");
@@ -125,7 +113,7 @@ uint8_t initLoRaHandler(void)
 	lmh_setDevAddr(nodeDevAddr);
 
 	// Initialize LoRaWan
-	err_code = lmh_init(&lora_callbacks, lora_param_init, doOTAA);
+	err_code = lmh_init(&lora_callbacks, lora_param_init, doOTAA, CLASS_A, LORAMAC_REGION_AS923);
 	if (err_code != 0)
 	{
 		return 2;
@@ -151,12 +139,6 @@ uint8_t initLoRaHandler(void)
 		Serial.println("lmh_setSubBandChannels failed. Wrong sub band requested?");
 	}
 
-	Serial.println("Starting LoRaWan task");
-	if (!xTaskCreate(loraTask, "LORA", 2048, NULL, TASK_PRIO_LOW, &loraTaskHandle))
-	{
-		return 4;
-	}
-
 	// Start Join procedure
 	Serial.println("Start network join request");
 	lmh_join();
@@ -164,23 +146,6 @@ uint8_t initLoRaHandler(void)
 	ledTicker.begin(1000, ledOff, NULL, false);
 
 	return 0;
-}
-
-/**
- * @brief Independent task to handle LoRa events
- * 
- * @param pvParameters Unused
- */
-void loraTask(void *pvParameters)
-{
-	while (1)
-	{
-		xSemaphoreTake(loraEnable, portMAX_DELAY);
-		// Handle Radio events
-		Radio.IrqProcess();
-		xSemaphoreGive(loraEnable);
-		delay(10);
-	}
 }
 
 /**

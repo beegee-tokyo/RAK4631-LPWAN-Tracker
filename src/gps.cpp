@@ -59,9 +59,6 @@ bool pollGPS(void)
 	uint16_t speed = 0;
 	uint8_t hdop = 0;
 
-	// Block LoRa handler while doing SoftwareSerial
-	xSemaphoreTake(loraEnable, portMAX_DELAY);
-
 	digitalWrite(LED_BUILTIN, HIGH);
 	while ((millis() - timeout) < 10000)
 	{
@@ -104,9 +101,6 @@ bool pollGPS(void)
 			break;
 		}
 	}
-
-	// Unblock LoRa handler when finished with SoftwareSerial
-	xSemaphoreGive(loraEnable);
 
 	digitalWrite(LED_BUILTIN, LOW);
 	delay(10);
